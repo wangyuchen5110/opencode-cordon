@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "opencode-cordon",
+  "version": "0.1.0",
+  "description": "Declarative permission policy with an audit trail for OpenCode 2.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "opencode-cordon": "./bin/opencode-cordon.mjs",
+    "cordon": "./bin/opencode-cordon.mjs"
+  },
+  "main": "./src/plugin.mjs",
+  "exports": {
+    ".": "./src/plugin.mjs",
+    "./policy": "./src/policy.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "schema",
+    "docs",
+    "README.md",
+    "README.zh-CN.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/guard.test.mjs",
+    "demo": "node bin/opencode-cordon.mjs audit --log test/fixtures/audit.jsonl --html docs/demo/audit.html",
+    "prepublishOnly": "node --test test/guard.test.mjs"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "permissions",
+    "policy",
+    "security",
+    "audit",
+    "agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wangyuchen5110/opencode-cordon.git"
+  },
+  "homepage": "https://github.com/wangyuchen5110/opencode-cordon#readme",
+  "bugs": {
+    "url": "https://github.com/wangyuchen5110/opencode-cordon/issues"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.2.5"
+  }
+}

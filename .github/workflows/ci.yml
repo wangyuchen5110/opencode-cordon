@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit tests
+        run: node --test test/guard.test.mjs
+      - name: Policy check
+        run: node bin/opencode-cordon.mjs check --policy test/fixtures/cordon.jsonc
+      - name: Render audit report
+        run: node bin/opencode-cordon.mjs audit --log test/fixtures/audit.jsonl --html audit.html
+      - name: Evaluate does not loosen a deny
+        run: node bin/opencode-cordon.mjs evaluate --policy test/fixtures/cordon.jsonc --action shell --command "rm -rf /tmp/x" --json

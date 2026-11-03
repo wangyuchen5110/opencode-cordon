@@ -1,0 +1,38 @@
+// Policy used by the test suite and by `cordon check --policy test/fixtures/cordon.jsonc`.
+{
+  "version": 1,
+  "preset": "balanced",
+  "audit": {
+    "enabled": true,
+    "path": ".opencode/cordon/audit.jsonl",
+    "redact": true,
+    "storeCommand": true,
+    "commandHash": false,
+  },
+  "rules": [
+    {
+      "id": "deny-rm-rf",
+      "effect": "deny",
+      "match": { "action": "shell", "command": "rm -rf *" },
+      "reason": "destructive delete",
+    },
+    {
+      "id": "ask-push",
+      "effect": "ask",
+      "match": { "action": "shell", "command": "git push*" },
+      "reason": "pushing needs a human",
+    },
+    {
+      "id": "protect-vault",
+      "effect": "deny",
+      "match": { "action": "read|edit", "path": "**/secrets/**" },
+      "reason": "the vault stays closed",
+    },
+    {
+      "id": "exempt-fixtures",
+      "effect": "allow",
+      "match": { "action": "read", "path": "test/fixtures/**" },
+      "reason": "tests may read fixtures",
+    },
+  ],
+}
