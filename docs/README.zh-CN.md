@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/banner.svg" alt="opencode-cordon — 给 OpenCode 2 的权限警戒线" width="100%" />
+  <img src="assets/banner.svg" alt="opencode-cordon — 给 OpenCode 2 的权限警戒线" width="100%" />
 
   <h3>给 OpenCode 2 的权限警戒线：声明式策略 + 可审计的决策日志。</h3>
 
@@ -11,10 +11,10 @@
   <p>
     <a href="https://www.npmjs.com/package/opencode-cordon"><img src="https://img.shields.io/npm/v/opencode-cordon.svg" alt="npm version" /></a>
     <a href="https://github.com/wangyuchen5110/opencode-cordon/actions/workflows/ci.yml"><img src="https://github.com/wangyuchen5110/opencode-cordon/actions/workflows/ci.yml/badge.svg" alt="ci" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license" /></a>
+    <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license" /></a>
     <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A5%2020-1f2937" alt="node >= 20" /></a>
     <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-2.2.x-1f2937" alt="OpenCode 2.2.x" /></a>
-    <a href="docs/REGRESSION.md"><img src="https://img.shields.io/badge/verified-2.2.5-3fb950" alt="verified on 2.2.5" /></a>
+    <a href="REGRESSION.md"><img src="https://img.shields.io/badge/verified-2.2.5-3fb950" alt="verified on 2.2.5" /></a>
   </p>
 </div>
 
@@ -34,10 +34,10 @@ cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
 
 ## 真机效果
 
-下面这张图是 OpenCode 2.2.5 真机会话生成的审计报告（细节见 [`docs/REGRESSION.md`](docs/REGRESSION.md)）：
+下面这张图是 OpenCode 2.2.5 真机会话生成的审计报告（细节见 [`REGRESSION.md`](REGRESSION.md)）：
 
 <p align="center">
-  <img src="docs/assets/audit-report.png" alt="opencode-cordon HTML 审计报告：25 条事件，2 次拒绝" width="92%" />
+  <img src="assets/audit-report.png" alt="opencode-cordon HTML 审计报告：25 条事件，2 次拒绝" width="92%" />
 </p>
 
 那一轮里，agent 被要求读 `.env` 并执行 `rm -rf ./scratch`，同时开着 `--auto`（原生对 `rm` 是 allow，对 `.env` 是自动放行的 ask）：
@@ -52,7 +52,7 @@ cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
 ## 它怎么工作
 
 <p align="center">
-  <img src="docs/assets/architecture.svg" alt="agent 工具调用 → permission.evaluate → cordon 策略判定 → deny/ask 或保持原生 → JSONL 审计 → HTML 报告" width="100%" />
+  <img src="assets/architecture.svg" alt="agent 工具调用 → permission.evaluate → cordon 策略判定 → deny/ask 或保持原生 → JSONL 审计 → HTML 报告" width="100%" />
 </p>
 
 插件是 OpenCode 2 的 server part，注册四个钩子：
@@ -214,7 +214,7 @@ JSONL 每行一个事件（`decision` / `tool` / `shell`）：
 
 | 项 | 结果 |
 | --- | --- |
-| 真机回归 | **OpenCode 2.2.5 通过**（2026-11-03）：`--auto` 下 `.env` 读取被 `ask → deny`、`rm -rf ./scratch` 被 `allow → deny`，两次都落盘，目标文件保留 —— [`docs/REGRESSION.md`](docs/REGRESSION.md) |
+| 真机回归 | **OpenCode 2.2.5 通过**（2026-11-03）：`--auto` 下 `.env` 读取被 `ask → deny`、`rm -rf ./scratch` 被 `allow → deny`，两次都落盘，目标文件保留 —— [`REGRESSION.md`](REGRESSION.md) |
 | 单元 + 适配层测试 | **57 个全部通过**（`node --test test/guard.test.mjs test/plugin.test.mjs`），其中一套用真实 `@opencode/plugin` 钩子 + 假 context 驱动插件 |
 | 打包 | 已发布 [`opencode-cordon`](https://www.npmjs.com/package/opencode-cordon)，`npx opencode-cordon --version` 可用 |
 | CI | Node 20/22/24 × Ubuntu/Windows |
@@ -228,7 +228,7 @@ JSONL 每行一个事件（`decision` / `tool` / `shell`）：
 - **不是 V1 兼容层。** 1.18.x 没有对应的 permission 钩子。
 - **不是把判定交给 LLM 的插件。** 判定是本地、确定性的规则：不花 token、不引入网络调用。
 
-完整的威胁模型和漏洞报告流程见 [SECURITY.md](SECURITY.md)。
+完整的威胁模型和漏洞报告流程见 [SECURITY.md](../SECURITY.md)。
 
 ## 路线图
 
@@ -243,9 +243,9 @@ JSONL 每行一个事件（`decision` / `tool` / `shell`）：
 
 项目起源于对 OpenCode 生态的调研，原始报告已提交：
 
-- [`docs/research/scout-tooling.md`](docs/research/scout-tooling.md) — 工具链、安全、DB 运维、迁移
-- [`docs/research/scout-visual.md`](docs/research/scout-visual.md) — TUI/视觉插件与空白
-- [`docs/WHY.md`](docs/WHY.md) — 为什么是“策略 + 审计”，以及 cordon 不是什么
+- [`research/scout-tooling.md`](research/scout-tooling.md) — 工具链、安全、DB 运维、迁移
+- [`research/scout-visual.md`](research/scout-visual.md) — TUI/视觉插件与空白
+- [`WHY.md`](WHY.md) — 为什么是“策略 + 审计”，以及 cordon 不是什么
 
 ## 贡献
 
@@ -253,6 +253,6 @@ JSONL 每行一个事件（`decision` / `tool` / `shell`）：
 
 ## License
 
-[MIT](LICENSE) © 2026 wangyuchen5110
+[MIT](../LICENSE) © 2026 wangyuchen5110
 
-[English](README.md) · **简体中文**
+[English](../README.md) · **简体中文**

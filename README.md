@@ -255,4 +255,4 @@ Issues and pull requests are welcome. Run `npm ci && node --test test/guard.test
 
 [MIT](LICENSE) © 2026 wangyuchen5110
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[English](README.md) · [简体中文](docs/README.zh-CN.md)
