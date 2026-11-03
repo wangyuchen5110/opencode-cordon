@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" role="img" aria-label="How opencode-cordon works: tool call, permission evaluate, policy decision, audit log and HTML report">
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#0d1626"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#3d4a61"/>
+    </marker>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="520" rx="18" fill="url(#card)"/>
+  <ellipse cx="110" cy="60" rx="220" ry="130" fill="#2ea043" opacity="0.07" filter="url(#glow)"/>
+  <ellipse cx="990" cy="450" rx="220" ry="130" fill="#1f6feb" opacity="0.08" filter="url(#glow)"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace">
+    <rect x="390" y="38" width="320" height="58" rx="12" fill="#0f1725" stroke="#24324a"/>
+    <text x="410" y="62" fill="#6f7d90" font-size="10.5" letter-spacing="2">STEP 1</text>
+    <text x="410" y="84" fill="#d7dee8" font-size="14">agent tool call</text>
+
+    <line x1="550" y1="96" x2="550" y2="120" stroke="#3d4a61" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <rect x="390" y="126" width="320" height="58" rx="12" fill="#0f1725" stroke="#58a6ff"/>
+    <text x="410" y="150" fill="#58a6ff" font-size="10.5" letter-spacing="2">STEP 2 · PLUGIN HOOK</text>
+    <text x="410" y="172" fill="#d7dee8" font-size="14">permission.evaluate</text>
+
+    <rect x="770" y="126" width="280" height="58" rx="10" fill="#0a131f" stroke="#24324a" stroke-dasharray="5 4"/>
+    <text x="790" y="150" fill="#7ee787" font-size="11.5">policy file</text>
+    <text x="790" y="169" fill="#8b98ab" font-size="12">.opencode/cordon.jsonc</text>
+    <line x1="770" y1="155" x2="716" y2="155" stroke="#3d4a61" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+    <line x1="550" y1="184" x2="550" y2="210" stroke="#3d4a61" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <rect x="390" y="216" width="320" height="58" rx="12" fill="#0f1725" stroke="#24324a"/>
+    <text x="410" y="240" fill="#6f7d90" font-size="10.5" letter-spacing="2">STEP 3</text>
+    <text x="410" y="262" fill="#d7dee8" font-size="14">cordon policy decision</text>
+
+    <path d="M550 274 L550 298 L450 298 L450 318" fill="none" stroke="#3d4a61" stroke-width="1.4" marker-end="url(#arrow)"/>
+    <path d="M550 274 L550 298 L720 298 L720 318" fill="none" stroke="#3d4a61" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+    <rect x="320" y="324" width="260" height="58" rx="12" fill="#1a1013" stroke="#5b2229"/>
+    <text x="340" y="348" fill="#f85149" font-size="13" font-weight="700">deny / ask</text>
+    <text x="340" y="368" fill="#9aa7b8" font-size="11.5">block, or show the native prompt</text>
+
+    <rect x="590" y="324" width="260" height="58" rx="12" fill="#0f1a14" stroke="#1f4429"/>
+    <text x="610" y="348" fill="#3fb950" font-size="13" font-weight="700">allow / no match</text>
+    <text x="610" y="368" fill="#9aa7b8" font-size="11.5">native decision untouched</text>
+
+    <line x1="450" y1="382" x2="450" y2="416" stroke="#3d4a61" stroke-width="1.4" marker-end="url(#arrow)"/>
+    <line x1="720" y1="382" x2="720" y2="416" stroke="#3d4a61" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+    <rect x="320" y="422" width="530" height="62" rx="12" fill="#0f1725" stroke="#58a6ff"/>
+    <text x="340" y="446" fill="#58a6ff" font-size="12.5">JSONL audit log  →  cordon audit --html</text>
+    <text x="340" y="467" fill="#8b98ab" font-size="11.5">append-only · secrets redacted · single-file HTML report</text>
+
+    <text x="40" y="508" fill="#4d5b70" font-size="10.5">cordon can only tighten: deny always wins, ask only upgrades an allow, and an allow or a non-match never widens the native decision.</text>
+  </g>
+</svg>

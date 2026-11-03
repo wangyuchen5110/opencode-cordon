@@ -212,7 +212,7 @@ function audit(args) {
       records,
       policy: loaded.policy,
       policyPath: loaded.file,
-      logPath,
+      logPath: args.log ? String(args.log) : ".opencode/cordon/audit.jsonl",
       generatedAt: new Date().toISOString(),
     });
     writeFileSync(htmlPath, html, "utf8");

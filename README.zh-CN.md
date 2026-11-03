@@ -1,96 +1,117 @@
-[English](README.md) | **简体中文**
+<div align="center">
+  <img src="docs/assets/banner.svg" alt="opencode-cordon — 给 OpenCode 2 的权限警戒线" width="100%" />
 
-<!-- badges 占位：npm 包发布后自动生效，发布前 404 属正常 -->
-[![npm version](https://img.shields.io/npm/v/opencode-cordon.svg)](https://www.npmjs.com/package/opencode-cordon)
-[![node](https://img.shields.io/node/v/opencode-cordon.svg)](https://nodejs.org)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![OpenCode 2](https://img.shields.io/badge/OpenCode-2.2.x-1f2937)](#兼容性与路线图)
+  <h3>给 OpenCode 2 的权限警戒线：声明式策略 + 可审计的决策日志。</h3>
 
-# opencode-cordon
+  <p>
+    规则写在仓库里，判定发生在 <code>permission.evaluate</code>，<br/>
+    每一次决定都脱敏落盘，一条命令变成可分享的 HTML 审计报告。
+  </p>
 
-**给 OpenCode 2 的权限警戒线：声明式策略 + 可审计的决策日志。**
+  <p>
+    <a href="https://www.npmjs.com/package/opencode-cordon"><img src="https://img.shields.io/npm/v/opencode-cordon.svg" alt="npm version" /></a>
+    <a href="https://github.com/wangyuchen5110/opencode-cordon/actions/workflows/ci.yml"><img src="https://github.com/wangyuchen5110/opencode-cordon/actions/workflows/ci.yml/badge.svg" alt="ci" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license" /></a>
+    <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A5%2020-1f2937" alt="node >= 20" /></a>
+    <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-2.2.x-1f2937" alt="OpenCode 2.2.x" /></a>
+    <a href="docs/REGRESSION.md"><img src="https://img.shields.io/badge/verified-2.2.5-3fb950" alt="verified on 2.2.5" /></a>
+  </p>
+</div>
 
-> *Declarative permission policy with a tamper-evident audit trail for OpenCode 2.*
+---
 
-cordon 挂在 OpenCode 2 的 permission 判定上：用一份 `.opencode/cordon.jsonc` 决定哪些操作要更严，把每一次决定写进 JSONL，随时能生成一份自包含的 HTML 审计报告。它**只收紧、不放宽**——装错了最坏是"太严"，不会是"静默放开"。
+**一段话说清问题。** OpenCode 的 agent 会自己读文件、跑 shell、改代码、推分支。原生权限是一个全局粗开关：不能按仓库 review，一次会话结束后也查不到“当时是哪条规则放行的”。某次 `.env` 被读走、某次 `rm -rf` 执行成功，事后没人说得清为什么。
 
-## 为什么做这个
+**它补上的东西。** 一份进 git 的策略文件（`opencode-cordon`），在插件钩子上强制执行，并写进 append-only 日志。设计上**只能收紧、不能放宽**：`deny` 永远赢，`ask` 只把 `allow` 升级，没命中规则就完全不碰 OpenCode 自己的判定。配错了最坏是“太严”，不会“静默开门”。
 
-三条公开证据，按强度排序：
+```console
+$ cordon evaluate --action shell --command "rm -rf /tmp/x"
+deny  rule preset:destructive — irreversible shell command
 
-1. **凭据泄露不是假设。** 2026-10-17 的 HN 帖「OpenCode Hacked: User credentials leaked」拿到 **977 分 / 185 评论**（[HN 50133401](https://news.ycombinator.com/item?id=50133401)）；仓库里 [#46745](https://github.com/anomalyco/opencode/issues/46745) 记录 Bedrock / SAP 插件把存储的 API key 写进 `process.env`，泄露给每个子进程。
-2. **官方至今没有沙箱。** [#2242「Is there a way to sandbox the agent?」](https://github.com/anomalyco/opencode/issues/2242) 从 2025-08 挂到现在仍然 open，**106 评论 / 👍82**。OpenCode 2.0 砍掉了 LSP、会话分享等一批功能，沙箱始终没做；权限仍然只是核心配置里的粗粒度开关。
-3. **现有工具都只解决一个点。** 权限判定类插件全部在 40★ 以下：opencode-auto-permissions 38★、opencode-permission-reviewer 20★、opencode-warden 16★；该方向最高星的 opencode-vibeguard 有 217★，但 2026-03 就停更了。**没有一个同时做「策略引擎 + 审计留痕」**（数据见 [`docs/research/scout-tooling.md`](docs/research/scout-tooling.md) §2.4）。
+$ cordon audit --log .opencode/cordon/audit.jsonl --html report.html
+cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
+```
 
-## 它是什么
+## 真机效果
 
-- **一层 permission 判定**：挂在 OpenCode 2 的 `ctx.permission.hook("evaluate")` 上做收紧。插件是 server part（`Plugin.define`），不 patch 核心、不 fork、不改 OpenCode 自身的 permission 配置。
-- **一份声明式策略**：`.opencode/cordon.jsonc` 里写规则，按 `action` / `tool` / `path` / `command` / `agent` 匹配，跟着仓库走、能 diff、能 review。
-- **一条决策日志**：每次 permission 判定、工具调用、命令创建写成 JSONL，`cordon audit` 汇总成单文件 HTML。
-- **一个零依赖 CLI**：`check` / `evaluate` / `audit` / `init` / `redact`，离线可跑，退出码稳定，能直接进 CI。
+下面这张图是 OpenCode 2.2.5 真机会话生成的审计报告（细节见 [`docs/REGRESSION.md`](docs/REGRESSION.md)）：
 
-## 它不是什么
+<p align="center">
+  <img src="docs/assets/audit-report.png" alt="opencode-cordon HTML 审计报告：25 条事件，2 次拒绝" width="92%" />
+</p>
 
-- **不是沙箱。** 不做进程隔离、不做网络隔离、不拦系统调用。它只作用于 OpenCode 的 permission 决策与工具/命令事件；你绕过 OpenCode 直接在终端里跑的东西，它看不到。
-- **不是原生 permission 的替代。** cordon 只收紧，原生 deny 永远是 deny（见[只收紧，不放宽](#只收紧不放宽)）。想放宽只能改 OpenCode 自己的 permission 配置。
-- **不是 secrets manager / DLP 产品。** `redact` 是基于规则的最佳努力，不是完整的 PII 分类器。最稳的做法仍然是用规则把密钥路径直接挡在上下文之外。
-- **不是密码学意义上的防篡改日志。** `tamper-evident` 在这里指：每条决策绑定明确的 `rule` + `reason`、远程命令只存 sha256、敏感值默认脱敏、日志只追加。有本地写权限的人仍然可以改删文件——那部分属于外部日志收集和文件权限的职责。
-- **不是 V1 兼容层。** 1.18.x 上没有对应的 permission 钩子。
-- **不是「把每个 ask 丢给模型审一遍」那种插件。** 判定是本地规则、确定性的，不花 token、不引入网络调用。
+那一轮里，agent 被要求读 `.env` 并执行 `rm -rf ./scratch`，同时开着 `--auto`（原生对 `rm` 是 allow，对 `.env` 是自动放行的 ask）：
 
-完整的威胁模型和漏洞报告流程见 [SECURITY.md](SECURITY.md)。
+| 尝试 | 原生 | cordon | 结果 |
+| --- | --- | --- | --- |
+| `read .env` | `ask` | **`deny`** | `permission.rejected — regression: env files are off limits` |
+| `shell: rm -rf ./scratch` | `allow` | **`deny`** | `Unable to execute command`，`scratch/keep.txt` 原样保留 |
+
+两次判定都带着规则 id 和原因写进了 JSONL。这就是重点：**agent 被拦住了，而且你能证明是谁拦的。**
+
+## 它怎么工作
+
+<p align="center">
+  <img src="docs/assets/architecture.svg" alt="agent 工具调用 → permission.evaluate → cordon 策略判定 → deny/ask 或保持原生 → JSONL 审计 → HTML 报告" width="100%" />
+</p>
+
+插件是 OpenCode 2 的 server part，注册四个钩子：
+
+- `permission.evaluate` — 在动作发生前求值策略，必要时收紧 effect；
+- `tool.execute.before` / `tool.execute.after` — 记录每次工具调用和结果；
+- `shell.create.before` — 记录每条被创建的命令。
+
+### 最关键的一条规则：只收紧，不放宽
+
+| 原生 `effect` | cordon `deny` | cordon `ask` | cordon `allow` / 无命中 |
+| --- | --- | --- | --- |
+| `allow` | **deny** | **ask** | allow（不碰） |
+| `ask` | **deny** | ask（不碰） | ask（不碰） |
+| `deny` | deny（不碰） | deny（不碰） | deny（不碰） |
+
+用户规则里的 `effect: "allow"` 不会放宽任何东西——它的作用是**豁免**后续 cordon 规则，让这条调用直接走原生判定。这是从 preset 里开例外口子的唯一推荐方式。
 
 ## 安装
 
-插件侧需要 **OpenCode 2.2.x**；CLI 和插件运行时需要 **Node ≥ 20**（ESM，零运行时依赖）。
+插件侧需要 **OpenCode 2.2.x**；CLI 需要 **Node ≥ 20**（ESM，零运行时依赖）。
 
 ```bash
-# 1) 装插件：写进 opencode 配置，OpenCode 下次启动时加载
+# 装插件（OpenCode 下次启动时加载）
 opencode plugin add opencode-cordon
 
-# 2) 装 CLI（也可以直接 npx，不装）
-npm install -g opencode-cordon     # 之后可以用简写 cordon
-npx opencode-cordon --version
+# 装 CLI（可选，npx 也行）
+npm install -g opencode-cordon    # 简写：cordon
 ```
 
-只想要策略校验和审计报告，不挂插件也能用：CLI 不依赖运行中的 OpenCode。
+CLI 可以独立使用：策略校验和审计报告不需要运行中的 OpenCode。
 
 ## 5 分钟快速开始
 
 ```bash
-# 1. 在当前项目落一份策略（默认 balanced）
+# 1. 给当前项目生成策略
 npx opencode-cordon init
-# → 写入 .opencode/cordon.jsonc
+# → .opencode/cordon.jsonc（默认 balanced preset）
 
-# 2. 校验策略。0 = 通过，2 = 无效
+# 2. 校验：0 = 通过，2 = 无效
 npx opencode-cordon check
 
 # 3. 试几条判定，看退出码
-npx opencode-cordon evaluate --action shell --command "rm -rf ./build"       # 20 = deny
-npx opencode-cordon evaluate --action shell --command "git push origin main" # 10 = ask
-npx opencode-cordon evaluate --action shell --command "npm test"             #  0 = allow / 无命中
-npx opencode-cordon evaluate --action read  --path .env.local                # 20 = deny
+npx opencode-cordon evaluate --action shell --command "rm -rf ./build"        # 20 = deny
+npx opencode-cordon evaluate --action shell --command "git push origin main"  # 10 = ask
+npx opencode-cordon evaluate --action read  --path "/repo/README.md"          #  0 = pass
+
+# 4. 生成审计报告
+npx opencode-cordon audit --log .opencode/cordon/audit.jsonl --html audit.html --open
 ```
-
-PowerShell 里看 `$LASTEXITCODE`，bash / zsh 里看 `$?`。判定和退出码是稳定的，可以直接写进 CI 当策略测试。
-
-```bash
-# 4. 跑一段 OpenCode 会话（插件会把决策写进 .opencode/cordon/audit.jsonl），然后：
-npx opencode-cordon audit --html report.html --open
-```
-
-`audit` 默认读 `.opencode/cordon/audit.jsonl`，按 `decision` / `rule` / `action` / `agent` 汇总，生成一个自包含的单文件 HTML（无外链资源，可以直接发给别人）。CI 里用 `--json`。
 
 ## 策略文件
 
-两个位置，同一格式：
+两个位置，同一种格式：
 
 | 位置 | 用途 |
-|---|---|
-| `.opencode/cordon.jsonc` | 项目内策略，跟仓库走、进 code review |
+| --- | --- |
+| `.opencode/cordon.jsonc` | 项目策略，跟仓库走、进 code review |
 | `~/.config/opencode/cordon.jsonc` | 全局策略，跨项目复用 |
-
-策略文件里没写 `preset` 时，按 `balanced` 的 preset 规则求值；**完全没有策略文件时插件保持空闲（不猜规则，只打一行日志）**。JSONC 允许注释和尾逗号。
 
 ```jsonc
 {
@@ -100,7 +121,8 @@ npx opencode-cordon audit --html report.html --open
     "enabled": true,
     "path": ".opencode/cordon/audit.jsonl",
     "redact": true,
-    "commandHash": true            // 远程命令只存 sha256，不存明文
+    "storeCommand": true,
+    "commandHash": false           // true = 命令只存 sha256，不存明文
   },
   "rules": [
     {
@@ -110,177 +132,127 @@ npx opencode-cordon audit --html report.html --open
       "reason": "destructive shell command"
     },
     {
-      "id": "ask-push",
-      "effect": "ask",
-      "match": { "action": "shell", "command": "git push*" },
-      "reason": "pushing needs a human"
-    },
-    {
       "id": "protect-env",
       "effect": "deny",
-      "match": { "action": "read|edit|write", "path": "**/.env*" },
+      "match": { "action": "read|edit", "path": ["**/.env*", "**/.ssh/**"] },
       "reason": "secrets never enter the context"
+    },
+    {
+      "id": "exempt-fixtures",
+      "effect": "allow",
+      "match": { "action": "read", "path": "test/fixtures/**" },
+      "reason": "tests may read fixtures"
     }
   ]
 }
 ```
 
-### 顶层字段
+### 字段
 
 | 字段 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `version` | number | 目前固定 `1` |
 | `preset` | string | `balanced`（默认）/ `strict` / `relaxed` |
-| `audit.enabled` | boolean | 是否写审计日志 |
-| `audit.path` | string | 日志路径，默认 `.opencode/cordon/audit.jsonl` |
-| `audit.redact` | boolean | 敏感值脱敏，默认开 |
-| `audit.commandHash` | boolean | 远程命令只存 sha256，不存明文 |
-| `rules` | array | 用户规则，先于 preset 规则求值 |
+| `audit.enabled` | boolean | 是否写 JSONL（默认 `true`） |
+| `audit.path` | string | 默认 `.opencode/cordon/audit.jsonl` |
+| `audit.redact` | boolean | 落盘前脱敏（默认 `true`） |
+| `audit.storeCommand` | boolean | 存脱敏后的命令文本（默认 `true`） |
+| `audit.commandHash` | boolean | 只存命令的 SHA-256（默认 `false`） |
+| `rules` | array | 用户规则，先于 preset 求值 |
 
-### 规则字段
+策略里没写 `preset` 时按 `balanced` 求值；**完全没有策略文件时插件保持空闲**——只打一行日志，不猜规则。
 
-| 字段 | 说明 |
-|---|---|
-| `id` | 规则标识，会落进审计日志的 `rule` 字段；同一份策略里唯一 |
-| `effect` | `deny` / `ask` / `allow`。**`allow` 表示"这里不收紧"，不会覆盖原生的 ask / deny** |
-| `match.action` | action glob，可用 `a\|b` 写多个，如 `shell`、`read\|edit\|write` |
-| `match.tool` | `action` 的别名，按工具名匹配，如 `edit`、`bash` |
-| `match.path` | 路径 glob，支持 `**`，如 `**/.env*` |
-| `match.command` | 命令 glob，`*` 可跨空格，如 `git push*` |
-| `match.agent` | agent id glob，如 `build`、`*plan*` |
-| `reason` | 给人看的理由，原样写进审计日志 |
+### 匹配
 
-`match` 里多个字段是 **AND**：全部命中才算命中。
+`match` 支持五个字段；写了几个就都要匹配（AND），数组值是 OR：
 
-### glob 规则
+| 字段 | 匹配对象 | 是否路径模式 |
+| --- | --- | --- |
+| `action` | 权限动作（`shell`、`read`、`edit`…） | 否 |
+| `tool` | 工具名（缺省回落到 `action`） | 否 |
+| `command` | 请求里的 shell 命令 | 否（`*` 可跨空格） |
+| `path` | 请求涉及的文件路径 | 是（`*` 不跨目录） |
+| `agent` | agent id | 否 |
 
-- `*` 匹配任意非路径分隔符字符；命令匹配里 `*` 可以跨空格；
-- `**` 跨目录；
-- `?` 匹配单个字符；
-- 大小写不敏感（Windows 上尤其重要）。
+Glob：`*`（路径模式下不跨 `/`）、`**`（跨目录，`**/` 可匹配零层目录）、`?`（单字符）、`{a,b}`（或）、`a|b`（action/tool/agent 的或）。大小写不敏感。
 
-### 求值顺序
+求值顺序：**用户规则按声明顺序，然后 preset 规则；首个命中生效。** 没命中就不碰原生判定。
 
-1. 用户 `rules` 按数组顺序求值；
-2. 再求值 `preset` 规则；
-3. **第一个命中的规则生效**（用户规则天然优先于 preset）；
-4. 都没有命中 = **不碰原生判定**。
+### Preset
 
-注意 `allow` 的语义：它只表示"这一步 cordon 不收紧"，不会把原生的 ask / deny 降级；但按"首个命中生效"，它会跳过同一份策略里后面的 preset 规则。想让 preset 兜底，就别在靠前的用户规则里写 `allow`。
+| Preset | 额外内容 |
+| --- | --- |
+| `relaxed` | 拦密钥路径 + 不可逆 shell；对外网命令问一句 |
+| `balanced` | `relaxed` + 对 `git push`、发布命令、web fetch 问一句 |
+| `strict` | `balanced` + 每条 shell 命令、每次编辑都问 |
 
-### preset
-
-| preset | 行为 |
-|---|---|
-| `balanced`（默认） | 拦密钥路径 + 危险删除 + 提权命令；`git push` / `webfetch` 问一句 |
-| `strict` | 在 balanced 之上：写 / 编辑一律 ask，shell 默认 ask |
-| `relaxed` | 只拦密钥路径与不可逆删除 |
+`cordon check` 会打印当前有多少条用户规则和 preset 规则生效。
 
 ## CLI
 
-| 命令 | 作用 | 主要参数 | 退出码 |
-|---|---|---|---|
-| `cordon check` | 校验策略（语法 + 字段 + glob） | `--policy <file>` `--json` | `0` 通过；`2` 无效 |
-| `cordon evaluate` | 离线跑一次判定 | `--action <a>`（必填）`--command <cmd>` `--path <p>`（可多次）`--agent <id>` `--policy <file>` `--json` | `0` allow / 无命中；`10` ask；`20` deny |
-| `cordon audit` | 汇总 JSONL + 生成自包含 HTML | `--log <file>` `--html <out>` `--open` `--json` | `0` 成功；失败非 0 |
-| `cordon init` | 写 `.opencode/cordon.jsonc` | `--preset <name>`（balanced / strict / relaxed）`--force` | `0` 成功；失败非 0 |
-| `cordon redact` | 密钥 / PII 脱敏到 stdout | `--stdin` 或 `<file>` | `0` 成功；失败非 0 |
-| `cordon --version` | 版本号 | — | `0` |
+| 命令 | 作用 | 退出码 |
+| --- | --- | --- |
+| `check [--policy f] [--json]` | 校验策略、打印生效规则 | 0 通过，2 无效 |
+| `evaluate --action a [--command c] [--path p] [--tool t] [--agent id]` | 判定单条调用 | 0 pass，10 ask，20 deny |
+| `audit --log f [--html out] [--open] [--json]` | 汇总日志、生成 HTML | 0 成功，4 日志缺失 |
+| `init [--preset p] [--out f] [--force]` | 生成起始策略 | 0 成功，1 已存在/用法错误 |
+| `redact [file]` | 从文件或 stdin 脱敏 | 0 |
 
-`cordon` 是 `opencode-cordon` 的简写，两者完全等价。`redact` 可以直接接管道：
+## 审计日志与报告
 
-```bash
-cat .env | cordon redact --stdin > .env.redacted
+JSONL 每行一个事件（`decision` / `tool` / `shell`）：
+
+```json
+{"v":1,"ts":"2026-11-03T03:57:37.927Z","event":"decision","sessionID":"ses_…","agent":"build","action":"shell","decision":"deny","nativeEffect":"allow","effect":"deny","rule":"deny-rm","reason":"regression: no destructive rm","command":"rm -rf ./scratch","commandHash":"dfc8ec3b…"}
 ```
 
-## 审计日志
+字段：`ts`、`event`、`sessionID`、`agent`、`action`、`tool`、`decision`（deny/ask/allow/pass）、`nativeEffect`、`effect`、`rule`、`reason`、`paths`、`command`（已脱敏）、`commandHash`、`redactions`，以及工具事件的 `status` / `durationMs`。
 
-默认写 `.opencode/cordon/audit.jsonl`，追加式，一行一个事件。字段：
+`cordon audit --html report.html` 会生成带摘要卡、规则排行、可筛选时间线的单文件报告。敏感值在落盘前脱敏，命令始终带稳定哈希，方便在不保留明文的前提下对账。
 
-| 字段 | 出现事件 | 说明 |
-|---|---|---|
-| `ts` | 全部 | 时间戳 |
-| `event` | 全部 | `decision` / `tool` / `shell` |
-| `sessionID` | 全部 | OpenCode 会话 id |
-| `agent` | 全部 | 触发的 agent |
-| `action` | decision | permission action |
-| `tool` | tool | 工具名 |
-| `decision` | decision | `allow` / `ask` / `deny` |
-| `rule` | decision | 命中的规则 id；没命中则空 |
-| `reason` | decision | 规则里的 `reason` |
-| `paths` | 全部 | 涉及路径（默认脱敏） |
-| `commandHash` | shell | 命令的 sha256（`audit.commandHash` 打开时） |
-| `status` | tool | 工具执行结果状态 |
+## 已验证
 
-敏感值默认脱敏；只需要命令指纹的场景打开 `commandHash`，明文就不会落盘。
+| 项 | 结果 |
+| --- | --- |
+| 真机回归 | **OpenCode 2.2.5 通过**（2026-11-03）：`--auto` 下 `.env` 读取被 `ask → deny`、`rm -rf ./scratch` 被 `allow → deny`，两次都落盘，目标文件保留 —— [`docs/REGRESSION.md`](docs/REGRESSION.md) |
+| 单元 + 适配层测试 | **57 个全部通过**（`node --test test/guard.test.mjs test/plugin.test.mjs`），其中一套用真实 `@opencode/plugin` 钩子 + 假 context 驱动插件 |
+| 打包 | 已发布 [`opencode-cordon@0.1.0`](https://www.npmjs.com/package/opencode-cordon)，`npx opencode-cordon --version` 可用 |
+| CI | Node 20/22/24 × Ubuntu/Windows |
 
-## 审计报告
+## 它不是什么
 
-`cordon audit --html report.html` 产出单个 HTML 文件：按 decision / rule / action / agent 汇总，附最近的决定列表；没有外部 CSS / JS / 字体，适合随工单、事故复盘或 PR 附件一起传。
+- **不是沙箱。** 不做进程、文件系统、网络隔离；它只看 OpenCode 的 permission 决策和工具/命令事件，你在终端里绕过 OpenCode 跑的东西不在范围内。
+- **不是原生 permission 的替代。** 只收紧、不放宽；想放宽只能改 OpenCode 自己的 permission 配置。
+- **不是 secrets manager / DLP 产品。** `redact` 是基于规则的最佳努力；最稳的做法仍然是用规则把密钥路径挡在上下文之外。
+- **不是密码学防篡改。** 这里的“可审计”指：每条记录绑定规则和原因、远程命令只存哈希、敏感值默认脱敏、日志只追加。本地有写权限的人仍能改删，要更强保证就把 JSONL 送到外部。
+- **不是 V1 兼容层。** 1.18.x 没有对应的 permission 钩子。
+- **不是把判定交给 LLM 的插件。** 判定是本地、确定性的规则：不花 token、不引入网络调用。
 
-> 截图占位：示例报告在 [`docs/demo/audit.html`](docs/demo/audit.html)，浏览器直接打开即可。正式截图（`docs/demo/audit-report.png`）补进来后替换本段。
+完整的威胁模型和漏洞报告流程见 [SECURITY.md](SECURITY.md)。
 
-## 兼容性与路线图
+## 路线图
 
-0.1.0 已完成 **OpenCode 2.2.5 真机回归**（2026-11-03）：在 `--auto` 自动放行的模式下，`.env` 读取被 cordon 从原生 `ask` 收紧为 `deny`，`rm -rf ./scratch` 从原生 `allow` 收紧为 `deny`，两次判定都写进了 JSONL，`scratch/keep.txt` 原样保留。证据见 [`docs/REGRESSION.md`](docs/REGRESSION.md)。
+- [x] OpenCode 2.2.5 真机回归 + 钩子 payload 样例
+- [ ] `session.panel` TUI 面板：实时显示“现在正在拦什么”
+- [ ] `cordon check --explain`：解释为什么命中、改哪条会怎样
+- [ ] 审计哈希链 + `cordon audit --verify`
+- [ ] GitHub Action：PR 删掉危险规则时失败
+- [ ] 社区策略模板
 
-| OpenCode | cordon 插件 | cordon CLI |
-|---|---|---|
-| 2.2.x | ✅ 目标版本（`Plugin.define` / server part），2026-11-03 真机实测通过 | ✅ |
-| 2.0 – 2.1 | ❌ 未适配（server part 自 2.2 起可用） | ✅ |
-| 1.18.x（V1） | ❌ V1 没有对应的 permission 钩子 | ✅ 独立可用 |
+## 调研
 
-| 版本 | 内容 |
-|---|---|
-| 0.1.0（当前） | 策略引擎、JSONL 审计、`check` / `evaluate` / `audit` / `init` / `redact`；57 个测试；2.2.5 真机回归通过 |
-| 下一步 | TUI 面板（用 `session.panel` 展示最近决策与规则命中） |
-| 之后 | 审计完整性校验（哈希链）、策略模板 / 团队分发 |
+项目起源于对 OpenCode 生态的调研，原始报告已提交：
 
-明确不做的：沙箱、网络隔离、V1 兼容层、把判定交给 LLM。
+- [`docs/research/scout-tooling.md`](docs/research/scout-tooling.md) — 工具链、安全、DB 运维、迁移
+- [`docs/research/scout-visual.md`](docs/research/scout-visual.md) — TUI/视觉插件与空白
+- [`docs/WHY.md`](docs/WHY.md) — 为什么是“策略 + 审计”，以及 cordon 不是什么
 
-本包零运行时依赖（ESM，Node ≥ 20）；开发时测试用 `node --test test/guard.test.mjs test/plugin.test.mjs`。
+## 贡献
 
-## 安全与威胁模型
-
-### 只收紧，不放宽
-
-cordon 的判定是对原生 permission 结果的单向修改：
-
-| cordon 判定 | 原生 allow | 原生 ask | 原生 deny |
-|---|---|---|---|
-| 无命中 / `allow` | allow | ask | deny |
-| `ask` | ask | ask | deny |
-| `deny` | deny | deny | deny |
-
-规则写错、策略文件被覆盖、插件升级出 bug——最坏结果是"该放行的被问了 / 被拦了"，不会是"该拦的被静默放行"。想真正放宽，只能改 OpenCode 的原生 permission 配置。
-
-### 明确不在范围内
-
-- 进程 / 网络隔离（需要 bwrap、容器、microVM 那类外部沙箱；两者可以叠加）；
-- OpenCode 之外的操作（其他终端、IDE、CI）；
-- secrets 的存储与轮换；
-- 完整的 PII / DLP 分类；
-- 防住一个有本地写权限、铁了心改审计文件的人。
-
-策略文件本身也是普通文件：agent 如果有写权限，它一样能改 `.opencode/cordon.jsonc`。把它纳入 code review，或者用 cordon 自己的规则保护起来：
-
-```jsonc
-{ "id": "protect-policy", "effect": "deny",
-  "match": { "action": "edit|write|read", "path": ".opencode/cordon*" },
-  "reason": "policy is edited by humans only" }
-```
-
-完整威胁模型与漏洞报告流程见 [SECURITY.md](SECURITY.md)。
-
-## 证据与致谢
-
-- HN「OpenCode Hacked: User credentials leaked」**977 分 / 185 评论**（2026-10-17）：https://news.ycombinator.com/item?id=50133401
-- issue #2242「Is there a way to sandbox the agent?」open，**106 评论 / 👍82**：https://github.com/anomalyco/opencode/issues/2242
-- issue #46745——Bedrock / SAP 把 key 写进 `process.env`，泄露给子进程：https://github.com/anomalyco/opencode/issues/46745
-- 生态与竞品数据：[`docs/research/scout-tooling.md`](docs/research/scout-tooling.md) §2.4 / §3 / §4 G1；视觉方向为什么不做：[`docs/research/scout-visual.md`](docs/research/scout-visual.md) §0 / §7（状态栏、token 面板已被官方内建和 20+ 个插件占满）。
-- 思路参考：opencode-vibeguard（脱敏）、opencode-permission-reviewer（每条判定落 JSONL）。
-- OpenCode 团队和 V2 插件 API。
+欢迎 issue 和 PR。提交前跑 `npm ci && node --test test/guard.test.mjs test/plugin.test.mjs`；请保持零运行时依赖（只用 `node:` 内置模块），新增规则匹配或脱敏模式时补测试。
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © 2026 wangyuchen5110
+
+[English](README.md) · **简体中文**
