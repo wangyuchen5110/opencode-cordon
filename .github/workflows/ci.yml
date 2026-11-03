@@ -18,8 +18,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: npm ci
       - name: Unit tests
-        run: node --test test/guard.test.mjs
+        run: node --test test/guard.test.mjs test/plugin.test.mjs
       - name: Policy check
         run: node bin/opencode-cordon.mjs check --policy test/fixtures/cordon.jsonc
       - name: Render audit report

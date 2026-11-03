@@ -17,4 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   assigned secrets) with stable per-secret hashes.
 - `opencode-cordon` CLI: `check`, `evaluate`, `audit`, `init`, `redact`.
 - Self-contained HTML audit report with filters, search and top-rule bars.
-- 40+ unit tests covering the policy engine, redaction, audit log and report.
+- 50+ unit tests covering the policy engine, redaction, audit log, report and the plugin adapter.
+
+### Verified
+
+- Live regression on OpenCode 2.2.5 (2026-11-03, `--auto` on): reading `.env` was tightened from
+  `ask` to `deny`, `rm -rf ./scratch` was tightened from `allow` to `deny`, both decisions were
+  written to the JSONL audit log, and the target file survived. See `docs/REGRESSION.md`.
+- `test/plugin.test.mjs` drives the real `@opencode/plugin` hooks through a fake context:
+  registration, tightening semantics, audit records, cleanup and policy-file overrides.

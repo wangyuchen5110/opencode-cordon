@@ -240,20 +240,20 @@ gets a stable hash so records can be correlated without the plaintext.
 
 | Item | Status |
 | --- | --- |
-| OpenCode 2.2.x plugin | implemented against `@opencode/plugin` 2.2.5 typings |
+| OpenCode 2.2.x plugin | implemented against `@opencode/plugin` 2.2.5 typings and **verified live on 2.2.5** (2026-11-03) |
 | OpenCode 1.x | not supported (no `permission.evaluate` hook) |
 | CLI | works standalone on Node 20/22/24 |
-| Tests | `node --test test/guard.test.mjs` (50 tests) |
-| Real-machine regression | pending: the development machine runs OpenCode 1.18.4, so the plugin hasn't been exercised on a live 2.2.x server yet |
+| Tests | `node --test test/guard.test.mjs test/plugin.test.mjs` (57 tests) |
+| Live regression | **passed**: with `--auto` on, a `.env` read was denied (`nativeEffect: ask`) and `rm -rf ./scratch` was denied (`nativeEffect: allow`); both denials landed in the audit log and `scratch/keep.txt` survived — see [`docs/REGRESSION.md`](docs/REGRESSION.md) |
 
-The core engine, redaction, audit writer and HTML report are fully unit-tested. The plugin file is
-a thin adapter (load policy → register hooks → write audit records); the remaining risk is hook
-payload drift across 2.2.x minors. Treat 0.1.x as a preview, pin the OpenCode minor, and open an
-issue with the log if a hook shape differs.
+The core engine, redaction, audit writer and HTML report are fully unit-tested. The plugin adapter
+is covered by `test/plugin.test.mjs`, which drives the real `@opencode/plugin` hooks through a fake
+context, and by the live run above. Remaining risk is hook payload drift across future 2.2.x
+minors; pin the OpenCode minor and open an issue with the log if a hook shape differs.
 
 ## Roadmap
 
-- [ ] Live regression run on OpenCode 2.2.x and a recorded fixture of hook payloads
+- [x] Live regression run on OpenCode 2.2.5 (2026-11-03) and a recorded fixture of hook payloads
 - [ ] `session.panel` TUI part: a live "what is being blocked right now" panel
 - [ ] Policy diff in `cordon check --explain` (why a call matched)
 - [ ] Import/export presets, community policy packs

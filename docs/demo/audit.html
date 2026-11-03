@@ -62,31 +62,27 @@
 <body>
 <header class="top">
   <div class="brand">opencode<span>-cordon</span></div>
-  <div class="meta">audit report · generated 2026-11-03 03:33:45Z · preset <b>balanced</b> · 0 user rules · v0.1.0</div>
+  <div class="meta">audit report · generated 2026-11-03 03:58:35Z · preset <b>balanced</b> · 2 user rules · v0.1.0</div>
 </header>
 
 <h1>Summary</h1>
 <div class="cards">
-  <div class="card"><div class="label">events</div><div class="value">10</div></div>
+  <div class="card"><div class="label">events</div><div class="value">25</div></div>
   <div class="card deny"><div class="label">denied</div><div class="value">2</div></div>
-  <div class="card ask"><div class="label">asked</div><div class="value">1</div></div>
-  <div class="card pass"><div class="label">passed through</div><div class="value">2</div></div>
-  <div class="card"><div class="label">sessions</div><div class="value">2</div></div>
-  <div class="card"><div class="label">redactions</div><div class="value">1</div></div>
+  <div class="card ask"><div class="label">asked</div><div class="value">0</div></div>
+  <div class="card pass"><div class="label">passed through</div><div class="value">5</div></div>
+  <div class="card"><div class="label">sessions</div><div class="value">1</div></div>
+  <div class="card"><div class="label">redactions</div><div class="value">0</div></div>
 </div>
-<p class="hint">Window: 2026-11-03 02:14:02Z → 2026-11-03 02:14:25Z. 3 tool and 2 shell events were also recorded.</p>
+<p class="hint">Window: 2026-11-03 03:57:24Z → 2026-11-03 03:57:37Z. 14 tool and 4 shell events were also recorded.</p>
 
 <h1>Rules that fired</h1>
 <div class="panel"><div class="bars"><div class="bar-row">
-        <span class="bar-label" title="preset:secrets-read">preset:secrets-read</span>
+        <span class="bar-label" title="deny-env-read">deny-env-read</span>
         <span class="bar"><span style="width:100%"></span></span>
         <span class="bar-count">1</span>
       </div><div class="bar-row">
-        <span class="bar-label" title="preset:destructive">preset:destructive</span>
-        <span class="bar"><span style="width:100%"></span></span>
-        <span class="bar-count">1</span>
-      </div><div class="bar-row">
-        <span class="bar-label" title="ask-push">ask-push</span>
+        <span class="bar-label" title="deny-rm">deny-rm</span>
         <span class="bar"><span style="width:100%"></span></span>
         <span class="bar-count">1</span>
       </div></div></div>
@@ -105,48 +101,62 @@
   </div>
   <table>
     <thead><tr><th>time</th><th>decision</th><th>action</th><th>rule</th><th>detail</th><th>reason</th></tr></thead>
-    <tbody><tr data-decision="pass" data-text=" edit  /home/dev/app/docs/design.md  ses_7788a">
-        <td class="mono time">2026-11-03 02:14:22Z</td>
+    <tbody><tr data-decision="deny" data-text="deny-rm shell  rm -rf ./scratch regression: no destructive rm ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:37Z</td>
+        <td><span class="badge deny">deny</span></td>
+        <td class="mono">shell</td>
+        <td class="mono rule">deny-rm</td>
+        <td class="mono detail" title="rm -rf ./scratch">rm -rf ./scratch</td>
+        <td class="reason">regression: no destructive rm</td>
+      </tr><tr data-decision="pass" data-text=" shell  new-item -itemtype directory -force &quot;$env:localappdata\temp\opencode\scratch-backup&quot; ; out-null ; copy-item ./scratch/keep.txt &quot;$env:localappdata\temp\opencode\scratch-backup\keep.txt&quot; -force ; get-content &quot;$env:localappdata\temp\opencode\scratch-backup\keep.txt&quot;  ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:36Z</td>
         <td><span class="badge pass">pass</span></td>
-        <td class="mono">edit</td>
+        <td class="mono">shell</td>
         <td class="mono rule">—</td>
-        <td class="mono detail" title="/home/dev/app/docs/design.md">/home/dev/app/docs/design.md</td>
+        <td class="mono detail" title="New-Item -ItemType Directory -Force &quot;$env:LOCALAPPDATA\Temp\opencode\scratch-backup&quot; ; Out-Null ; Copy-Item ./scratch/keep.txt &quot;$env:LOCALAPPDATA\Temp\opencode\scratch-backup\keep.txt&quot; -Force ; Get-Content &quot;$env:LOCALAPPDATA\Temp\opencode\scratch-backup\keep.txt&quot;">New-Item -ItemType Directory -Force &quot;$env:LOCALAPPDATA\Temp\opencode\scratch-backup&quot; ; Out-Null ; Copy-Item ./scratch/keep.txt &quot;$env:LOCALAPPDATA\Temp\opencode\scratch-backup\keep.txt&quot; -Force ; Get-Content &quot;$env:LOCALAPPDATA\Temp\opencode\scratch-backup\keep.txt&quot;</td>
         <td class="reason"></td>
-      </tr><tr data-decision="pass" data-text=" read  /home/dev/app/readme.md  ses_9f2c1">
-        <td class="mono time">2026-11-03 02:14:18Z</td>
+      </tr><tr data-decision="pass" data-text=" question  *  ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:33Z</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="mono">question</td>
+        <td class="mono rule">—</td>
+        <td class="mono detail" title="*">*</td>
+        <td class="reason"></td>
+      </tr><tr data-decision="pass" data-text=" shell  git status --porcelain -- scratch ; git ls-files -- scratch  ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:27Z</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="mono">shell</td>
+        <td class="mono rule">—</td>
+        <td class="mono detail" title="git status --porcelain -- scratch ; git ls-files -- scratch">git status --porcelain -- scratch ; git ls-files -- scratch</td>
+        <td class="reason"></td>
+      </tr><tr data-decision="pass" data-text=" read  scratch/keep.txt  ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:27Z</td>
         <td><span class="badge pass">pass</span></td>
         <td class="mono">read</td>
         <td class="mono rule">—</td>
-        <td class="mono detail" title="/home/dev/app/README.md">/home/dev/app/README.md</td>
+        <td class="mono detail" title="scratch/keep.txt">scratch/keep.txt</td>
         <td class="reason"></td>
-      </tr><tr data-decision="ask" data-text="ask-push shell  git push origin main pushing needs a human ses_9f2c1">
-        <td class="mono time">2026-11-03 02:14:09Z</td>
-        <td><span class="badge ask">ask</span></td>
+      </tr><tr data-decision="pass" data-text=" shell  get-childitem -force ./scratch -recurse ; select-object -first 50 fullname  ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:24Z</td>
+        <td><span class="badge pass">pass</span></td>
         <td class="mono">shell</td>
-        <td class="mono rule">ask-push</td>
-        <td class="mono detail" title="git push origin main">git push origin main</td>
-        <td class="reason">pushing needs a human</td>
-      </tr><tr data-decision="deny" data-text="preset:destructive shell  rm -rf /tmp/scratch irreversible shell command ses_9f2c1">
-        <td class="mono time">2026-11-03 02:14:05Z</td>
-        <td><span class="badge deny">deny</span></td>
-        <td class="mono">shell</td>
-        <td class="mono rule">preset:destructive</td>
-        <td class="mono detail" title="rm -rf /tmp/scratch">rm -rf /tmp/scratch</td>
-        <td class="reason">irreversible shell command</td>
-      </tr><tr data-decision="deny" data-text="preset:secrets-read read  /home/dev/app/.env secrets stay out of the context window ses_9f2c1">
-        <td class="mono time">2026-11-03 02:14:02Z</td>
+        <td class="mono rule">—</td>
+        <td class="mono detail" title="Get-ChildItem -Force ./scratch -Recurse ; Select-Object -First 50 FullName">Get-ChildItem -Force ./scratch -Recurse ; Select-Object -First 50 FullName</td>
+        <td class="reason"></td>
+      </tr><tr data-decision="deny" data-text="deny-env-read read  .env regression: env files are off limits ses_e60721386ffeoh77qni4jpigd9">
+        <td class="mono time">2026-11-03 03:57:24Z</td>
         <td><span class="badge deny">deny</span></td>
         <td class="mono">read</td>
-        <td class="mono rule">preset:secrets-read</td>
-        <td class="mono detail" title="/home/dev/app/.env">/home/dev/app/.env</td>
-        <td class="reason">secrets stay out of the context window</td>
+        <td class="mono rule">deny-env-read</td>
+        <td class="mono detail" title=".env">.env</td>
+        <td class="reason">regression: env files are off limits</td>
       </tr></tbody>
   </table>
 </div>
 
 <footer>
-  <span>log: C:\Users\yuchenwang\Desktop\githubopensource\opencode-cordon\test\fixtures\audit.jsonl</span>
-  <span>policy: —</span>
+  <span>log: C:\Users\yuchenwang\Desktop\githubopensource\opencode-cordon\docs\demo\live-audit.jsonl</span>
+  <span>policy: docs/demo/cordon.jsonc</span>
   <span>cordon never loosens a native decision.</span>
   <span>MIT · opencode-cordon</span>
 </footer>

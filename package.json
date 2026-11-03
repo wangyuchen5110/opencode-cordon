@@ -29,9 +29,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test test/guard.test.mjs",
+    "test": "node --test test/guard.test.mjs test/plugin.test.mjs",
     "demo": "node bin/opencode-cordon.mjs audit --log test/fixtures/audit.jsonl --html docs/demo/audit.html",
-    "prepublishOnly": "node --test test/guard.test.mjs"
+    "prepublishOnly": "node --test test/guard.test.mjs test/plugin.test.mjs"
   },
   "keywords": [
     "opencode",

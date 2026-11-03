@@ -1,0 +1,26 @@
+// Fixture policy for the isolated regression run.
+{
+  "version": 1,
+  "preset": "balanced",
+  "audit": {
+    "enabled": true,
+    "path": ".opencode/cordon/audit.jsonl",
+    "redact": true,
+    "storeCommand": true,
+    "commandHash": false
+  },
+  "rules": [
+    {
+      "id": "deny-env-read",
+      "effect": "deny",
+      "match": { "action": "read", "path": "**/.env" },
+      "reason": "regression: env files are off limits"
+    },
+    {
+      "id": "deny-rm",
+      "effect": "deny",
+      "match": { "action": "shell", "command": "rm -rf *" },
+      "reason": "regression: no destructive rm"
+    }
+  ]
+}

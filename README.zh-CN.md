@@ -222,23 +222,23 @@ cat .env | cordon redact --stdin > .env.redacted
 
 ## 兼容性与路线图
 
-0.1.0 的定位：**核心引擎和 CLI 已经能跑；插件适配层按 OpenCode 2.2.5 的类型签名实现，真机回归还在进行。** 开发机上没有 2.x（主力是 1.18.4），所以插件部分在 2.2.x 上的实测覆盖有限——这是本版本最大的已知风险，遇到问题请直接开 issue。
+0.1.0 已完成 **OpenCode 2.2.5 真机回归**（2026-11-03）：在 `--auto` 自动放行的模式下，`.env` 读取被 cordon 从原生 `ask` 收紧为 `deny`，`rm -rf ./scratch` 从原生 `allow` 收紧为 `deny`，两次判定都写进了 JSONL，`scratch/keep.txt` 原样保留。证据见 [`docs/REGRESSION.md`](docs/REGRESSION.md)。
 
 | OpenCode | cordon 插件 | cordon CLI |
 |---|---|---|
-| 2.2.x | ✅ 目标版本（`Plugin.define` / server part） | ✅ |
+| 2.2.x | ✅ 目标版本（`Plugin.define` / server part），2026-11-03 真机实测通过 | ✅ |
 | 2.0 – 2.1 | ❌ 未适配（server part 自 2.2 起可用） | ✅ |
 | 1.18.x（V1） | ❌ V1 没有对应的 permission 钩子 | ✅ 独立可用 |
 
 | 版本 | 内容 |
 |---|---|
-| 0.1.0（当前） | 策略引擎、JSONL 审计、`check` / `evaluate` / `audit` / `init` / `redact` |
-| 下一步 | 2.2.x 真机回归；TUI 面板（用 `session.panel` 展示最近决策与规则命中） |
+| 0.1.0（当前） | 策略引擎、JSONL 审计、`check` / `evaluate` / `audit` / `init` / `redact`；57 个测试；2.2.5 真机回归通过 |
+| 下一步 | TUI 面板（用 `session.panel` 展示最近决策与规则命中） |
 | 之后 | 审计完整性校验（哈希链）、策略模板 / 团队分发 |
 
 明确不做的：沙箱、网络隔离、V1 兼容层、把判定交给 LLM。
 
-本包零运行时依赖（ESM，Node ≥ 20）；开发时测试用 `node --test test/`。
+本包零运行时依赖（ESM，Node ≥ 20）；开发时测试用 `node --test test/guard.test.mjs test/plugin.test.mjs`。
 
 ## 安全与威胁模型
 
