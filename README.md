@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/banner.svg" alt="opencode-cordon — a permission cordon for OpenCode 2" width="100%" />
+  <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/banner.svg" alt="opencode-cordon — a permission cordon for OpenCode 2" width="100%" />
 
   <h3>Declarative permission policy with an audit trail for OpenCode 2.</h3>
 
@@ -37,7 +37,7 @@ cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
 The screenshot below is the real report from a live OpenCode 2.2.5 session (see [`docs/REGRESSION.md`](docs/REGRESSION.md)):
 
 <p align="center">
-  <img src="docs/assets/audit-report.png" alt="opencode-cordon HTML audit report: 25 events, 2 denied" width="92%" />
+  <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/audit-report.png" alt="opencode-cordon HTML audit report: 25 events, 2 denied" width="92%" />
 </p>
 
 In that run the agent was told to read `.env` and run `rm -rf ./scratch`, with `--auto` on (so the native decision was "allow" for `rm` and an auto-approved "ask" for `.env`):
@@ -52,7 +52,7 @@ Both decisions were written to the JSONL log with rule id and reason. That is th
 ## How it works
 
 <p align="center">
-  <img src="docs/assets/architecture.svg" alt="agent tool call → permission.evaluate → cordon policy decision → deny/ask or native decision untouched → JSONL audit → HTML report" width="100%" />
+  <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/architecture.svg" alt="agent tool call → permission.evaluate → cordon policy decision → deny/ask or native decision untouched → JSONL audit → HTML report" width="100%" />
 </p>
 
 The plugin is an OpenCode 2 server part that registers four hooks:

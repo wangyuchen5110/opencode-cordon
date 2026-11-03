@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/banner.svg" alt="opencode-cordon — 给 OpenCode 2 的权限警戒线" width="100%" />
+  <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/banner.svg" alt="opencode-cordon — 给 OpenCode 2 的权限警戒线" width="100%" />
 
   <h3>给 OpenCode 2 的权限警戒线：声明式策略 + 可审计的决策日志。</h3>
 
@@ -37,7 +37,7 @@ cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
 下面这张图是 OpenCode 2.2.5 真机会话生成的审计报告（细节见 [`REGRESSION.md`](REGRESSION.md)）：
 
 <p align="center">
-  <img src="assets/audit-report.png" alt="opencode-cordon HTML 审计报告：25 条事件，2 次拒绝" width="92%" />
+  <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/audit-report.png" alt="opencode-cordon HTML 审计报告：25 条事件，2 次拒绝" width="92%" />
 </p>
 
 那一轮里，agent 被要求读 `.env` 并执行 `rm -rf ./scratch`，同时开着 `--auto`（原生对 `rm` 是 allow，对 `.env` 是自动放行的 ask）：
@@ -52,7 +52,7 @@ cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
 ## 它怎么工作
 
 <p align="center">
-  <img src="assets/architecture.svg" alt="agent 工具调用 → permission.evaluate → cordon 策略判定 → deny/ask 或保持原生 → JSONL 审计 → HTML 报告" width="100%" />
+  <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/architecture.svg" alt="agent 工具调用 → permission.evaluate → cordon 策略判定 → deny/ask 或保持原生 → JSONL 审计 → HTML 报告" width="100%" />
 </p>
 
 插件是 OpenCode 2 的 server part，注册四个钩子：
