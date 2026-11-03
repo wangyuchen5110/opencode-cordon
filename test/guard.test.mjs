@@ -93,6 +93,15 @@ test("glob: brace alternatives and question mark", () => {
 test("glob: command mode lets * cross spaces and is case-insensitive", () => {
   assert.ok(matchGlob("Git Push origin main", "git push*", { pathMode: false }));
   assert.ok(matchGlob("rm -rf /tmp/x", "rm -rf *", { pathMode: false }));
+  assert.ok(matchGlob("rm  -rf   /tmp/x", "rm -rf *", { pathMode: false }));
+  assert.ok(matchGlob("git\tpush   origin main", "git push*", { pathMode: false }));
+});
+
+test("glob: path mode treats backslashes as separators", () => {
+  assert.ok(matchGlob("C:\\repo\\.env", "**/.env*"));
+  assert.ok(matchGlob("C:\\repo\\.env.local", "**\\.env*"));
+  assert.ok(matchGlob("C:\\repo\\.ssh\\id_ed25519", "**\\.ssh\\**"));
+  assert.ok(!matchGlob("C:\\repo\\env", "**\\.env*"));
 });
 
 test("matchAlternatives splits on pipes", () => {
@@ -229,6 +238,9 @@ test("balanced preset denies secrets, destructive shell and asks for push", () =
   assert.equal(decide(policy, normalizePermission({ action: "read", resources: ["/repo/.env"] })).decision, "deny");
   assert.equal(decide(policy, normalizePermission({ action: "read", resources: ["/repo/README.md"] })).decision, null);
   assert.equal(decide(policy, normalizePermission({ action: "shell", resources: ["rm -rf /tmp/x"] })).decision, "deny");
+  assert.equal(decide(policy, normalizePermission({ action: "shell", resources: ["rm  -fr   /tmp/x"] })).decision, "deny");
+  assert.equal(decide(policy, normalizePermission({ action: "shell", resources: ["/bin/rm -rf /tmp/x"] })).decision, "deny");
+  assert.equal(decide(policy, normalizePermission({ action: "read", resources: ["C:\\repo\\.env"] })).decision, "deny");
   assert.equal(decide(policy, normalizePermission({ action: "shell", resources: ["git push origin main"] })).decision, "ask");
   assert.equal(decide(policy, normalizePermission({ action: "shell", resources: ["ls -la"] })).decision, null);
 });

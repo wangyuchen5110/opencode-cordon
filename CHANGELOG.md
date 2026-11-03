@@ -4,11 +4,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-11-03
+
+### Fixed
+
+- Command globs collapse whitespace before matching, so `rm  -rf /tmp` and `git\tpush origin` hit the same rules as the single-spaced form.
+- Path globs treat `\` as `/`, so a Windows pattern such as `**\.env*` matches `C:\repo\.env`.
+- The destructive preset also denies `rm -fr` and a path-prefixed `rm` (`/bin/rm -rf …`).
+
 ## [0.1.3] - 2026-11-03
 
 ### Changed
 
-- README images now use absolute aw.githubusercontent.com URLs so the banner, architecture diagram and report screenshot also render on the npm package page.
+- README images now use absolute raw.githubusercontent.com URLs so the banner, architecture diagram and report screenshot also render on the npm package page.
 
 ## [0.1.2] - 2026-11-03
 

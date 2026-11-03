@@ -112,6 +112,11 @@ export function normalizePath(value) {
   return String(value ?? "").replace(/\\/g, "/");
 }
 
+/** Collapse runs of whitespace so `rm  -rf` still matches `rm -rf *`. */
+export function normalizeCommand(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
 /** Heuristic: does this string look like a file path instead of a command? */
 export function looksLikePath(value) {
   const s = normalizePath(value).trim();
@@ -173,6 +178,21 @@ export function globToRegExp(pattern, options = {}) {
   return new RegExp("^" + re + "$", "i");
 }
 
+const GLOB_CACHE_LIMIT = 256;
+const globCache = new Map();
+
+function compiledGlob(pattern, pathMode) {
+  const key = (pathMode ? "p:" : "c:") + pattern;
+  let re = globCache.get(key);
+  if (!re) {
+    re = globToRegExp(pattern, { pathMode });
+    if (globCache.size >= GLOB_CACHE_LIMIT) globCache.clear();
+    globCache.set(key, re);
+  }
+  re.lastIndex = 0;
+  return re;
+}
+
 /**
  * Match one value against one glob.
  * @param {string} value
@@ -180,8 +200,11 @@ export function globToRegExp(pattern, options = {}) {
  * @param {{ pathMode?: boolean }} [options]
  */
 export function matchGlob(value, pattern, options = {}) {
-  const text = options.pathMode === false ? String(value ?? "") : normalizePath(value);
-  return globToRegExp(pattern, options).test(text);
+  const pathMode = options.pathMode !== false;
+  const text = pathMode ? normalizePath(value) : normalizeCommand(value);
+  const source = pathMode ? normalizePath(pattern) : normalizeCommand(pattern);
+  if (!source) return false;
+  return compiledGlob(source, pathMode).test(text);
 }
 
 /**
