@@ -27,4 +27,4 @@ jobs:
       - name: Render audit report
         run: node bin/opencode-cordon.mjs audit --log test/fixtures/audit.jsonl --html audit.html
       - name: Evaluate does not loosen a deny
-        run: node bin/opencode-cordon.mjs evaluate --policy test/fixtures/cordon.jsonc --action shell --command "rm -rf /tmp/x" --json
+        run: node scripts/ci-evaluate.mjs

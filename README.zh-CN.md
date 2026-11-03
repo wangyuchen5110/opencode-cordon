@@ -216,7 +216,7 @@ JSONL 每行一个事件（`decision` / `tool` / `shell`）：
 | --- | --- |
 | 真机回归 | **OpenCode 2.2.5 通过**（2026-11-03）：`--auto` 下 `.env` 读取被 `ask → deny`、`rm -rf ./scratch` 被 `allow → deny`，两次都落盘，目标文件保留 —— [`docs/REGRESSION.md`](docs/REGRESSION.md) |
 | 单元 + 适配层测试 | **57 个全部通过**（`node --test test/guard.test.mjs test/plugin.test.mjs`），其中一套用真实 `@opencode/plugin` 钩子 + 假 context 驱动插件 |
-| 打包 | 已发布 [`opencode-cordon@0.1.0`](https://www.npmjs.com/package/opencode-cordon)，`npx opencode-cordon --version` 可用 |
+| 打包 | 已发布 [`opencode-cordon`](https://www.npmjs.com/package/opencode-cordon)，`npx opencode-cordon --version` 可用 |
 | CI | Node 20/22/24 × Ubuntu/Windows |
 
 ## 它不是什么

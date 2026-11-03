@@ -216,7 +216,7 @@ Fields: `ts`, `event`, `sessionID`, `agent`, `action`, `tool`, `decision` (deny/
 | --- | --- |
 | Live regression | **Passed on OpenCode 2.2.5** (2026-11-03): `.env` read tightened `ask → deny`, `rm -rf ./scratch` tightened `allow → deny` under `--auto`, both logged, target file survived — [`docs/REGRESSION.md`](docs/REGRESSION.md) |
 | Unit + adapter tests | **57 passing** (`node --test test/guard.test.mjs test/plugin.test.mjs`), including a suite that drives the real `@opencode/plugin` hooks through a fake context |
-| Packaging | published as [`opencode-cordon@0.1.0`](https://www.npmjs.com/package/opencode-cordon); `npx opencode-cordon --version` works |
+| Packaging | published as [`opencode-cordon`](https://www.npmjs.com/package/opencode-cordon); `npx opencode-cordon --version` works |
 | CI | Node 20/22/24 × Ubuntu/Windows |
 
 ## What it is not

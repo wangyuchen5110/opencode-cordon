@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-11-03
+
+### Changed
+
+- README (English and Chinese) rewritten around the problem, the live regression evidence, a
+  banner, an architecture diagram and a real audit-report screenshot.
+- The HTML report now shows the audit log path exactly as given instead of an absolute path.
+
+### Fixed
+
+- CI: the "evaluate does not loosen a deny" step now asserts exit code 20 and the JSON decision
+  through `scripts/ci-evaluate.mjs`, instead of treating a correct deny as a failed step.
+
 ## [0.1.0] - 2026-11-03
 
 ### Added
