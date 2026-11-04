@@ -1,11 +1,11 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/wangyuchen5110/opencode-cordon/main/docs/assets/banner.svg" alt="opencode-cordon — a permission cordon for OpenCode 2" width="100%" />
 
-  <h3>Declarative permission policy with an audit trail for OpenCode 2.</h3>
+  <h3>Stop the agent. Prove who stopped it.</h3>
 
   <p>
-    Rules live in your repo. Decisions are enforced at <code>permission.evaluate</code>.<br/>
-    Every decision is logged, redacted, and one command away from a shareable HTML report.
+    A declarative permission cordon for OpenCode 2.<br>
+    Rules live in git. Every decision is logged. It only tightens — never loosens.
   </p>
 
   <p>
@@ -20,16 +20,23 @@
 
 ---
 
-**The problem in one paragraph.** An OpenCode agent reads files, runs shell commands, edits code and pushes branches. Native permissions are a coarse global switch, they are not reviewable per repository, and after a session there is no record of *which rule allowed what*. A `.env` read silently becomes a provider call. A `rm -rf` succeeds and nobody can reconstruct why.
+**The problem.**  
+OpenCode’s native permissions are a coarse global switch. After a session there is no record of *which rule allowed what*. A `.env` read silently becomes a provider call. An `rm -rf` succeeds and nobody can reconstruct why.
 
-**What this adds.** A small policy file that lives in your repo (`opencode-cordon`), enforced at the plugin hook and written to an append-only log. It **only tightens, never loosens**: `deny` always wins, `ask` only upgrades an `allow`, and a rule miss leaves OpenCode's own decision untouched. A misconfiguration can make the agent too strict — it can never silently open a door.
+**What cordon does.**  
+A small policy file in your repo, enforced at `permission.evaluate`. It **only tightens**:
 
-```console
-$ cordon evaluate --action shell --command "rm -rf /tmp/x"
-deny  rule preset:destructive — irreversible shell command
+| Attempt | Native | cordon | Result |
+| --- | --- | --- | --- |
+| `read .env` | `ask` | **`deny`** | blocked — secrets stay out |
+| `shell: rm -rf ./scratch` | `allow` | **`deny`** | blocked — file survived |
 
-$ cordon audit --log .opencode/cordon/audit.jsonl --html report.html
-cordon audit …  decisions 7  deny 2 · ask 0 · pass 5  …  html report.html
+Both decisions were written to the JSONL log with the exact rule and reason.  
+That is the whole point: **the agent is stopped, and you can prove who stopped it.**
+
+```bash
+npx opencode-cordon init
+npx opencode-cordon evaluate --action shell --command "rm -rf ./build"   # exit 20 = deny
 ```
 
 ## See it in action
