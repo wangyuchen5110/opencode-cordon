@@ -1,7 +1,7 @@
 // Turn a native permission request into a normalised "subject", evaluate the cordon
 // policy against it, and apply the decision. Only ever tightens a decision.
 
-import { matchAlternatives, matchGlob, looksLikePath } from "./util.mjs";
+import { commandCandidates, matchAlternatives, matchGlob, looksLikePath } from "./util.mjs";
 import { resolveRules } from "./policy.mjs";
 
 const EFFECT_RANK = { allow: 0, ask: 1, deny: 2 };
@@ -98,7 +98,9 @@ export function ruleMatches(rule, subject) {
         hit = alternatives.some((alt) => matchAlternatives(subject.tool || subject.action, alt, { pathMode: false }));
         break;
       case "command":
-        hit = alternatives.some((alt) => subject.commands.some((command) => matchGlob(command, alt, { pathMode: false })));
+        hit = alternatives.some((alt) =>
+          subject.commands.some((command) => commandCandidates(command).some((candidate) => matchGlob(candidate, alt, { pathMode: false }))),
+        );
         break;
       case "path":
         hit = alternatives.some((alt) => subject.paths.some((p) => matchGlob(p, alt, { pathMode: true })));

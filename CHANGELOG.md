@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-11-04
+
+### Added
+
+- New audit logs link each record to the previous one with SHA-256 (`prev`, `hash`). `cordon audit` checks the chain and exits 5 when a line was edited, removed or reordered. Logs written before this version stay valid and are reported as legacy.
+- The HTML report shows that chain status. Its version comes from `package.json`.
+
+The chain detects an in-place edit. Rewriting the file and recomputing the hashes still passes, and two writers appending at once can fork the chain. It is not a tamper-proof log.
+
+### Changed
+
+- A command rule is also tried against the text inside `bash -c`, `sh -c`, `powershell -Command` and `cmd /c`, including a path prefix such as `/bin/bash`. The raw command is still tested, so a wrapper can only add a match.
+- The destructive preset also denies split `rm` flags (`rm -r -f`, `rm --recursive --force`), `Remove-Item -Recurse`, `rmdir /s`, and a force-push whose `--force` or `-f` comes after the remote (`git push origin --force`, `git push origin main -f`). `git push origin main` still asks. `git push origin feature-f` does not count as `-f`.
+- `git -C repo push --force` still misses these globs. Cordon does not reorder git's global options.
+
 ## [0.1.4] - 2026-11-03
 
 ### Fixed

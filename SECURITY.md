@@ -25,7 +25,11 @@ cordon is a defense-in-depth layer around OpenCode 2 permission decisions. It ca
 cordon runs inside the OpenCode server process with the same privileges as the agent's tools.
 If an attacker can execute arbitrary code in that process, they can disable or tamper with the
 audit log. The audit trail is append-only by convention, not by cryptographic guarantee.
-For tamper-evident logs, ship the JSONL records to an external append-only sink.
+From 0.1.5, new logs link each record to the previous one with SHA-256 (`prev` and `hash`).
+`cordon audit` exits 5 when that chain breaks, which catches an edited, deleted or reordered line.
+A full rewrite can be recomputed, logs from before 0.1.5 stay valid and are reported as legacy,
+and two writers appending at once can fork the chain. For a real guarantee, ship the JSONL
+records to an external append-only sink.
 
 ## Failure behavior
 

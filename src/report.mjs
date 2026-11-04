@@ -1,9 +1,10 @@
 // Self-contained HTML audit report: no CDN, no fonts, no external assets.
 // Everything is inlined so the file can be attached to an issue or opened offline.
 
-import { summarize } from "./audit.mjs";
+import { readFileSync } from "node:fs";
+import { summarize, verifyChain } from "./audit.mjs";
 
-const VERSION = "0.1.0";
+const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
 /** @param {unknown} value */
 function esc(value) {
@@ -39,6 +40,17 @@ function detailOf(record) {
 export function renderAuditReport(input) {
   const records = Array.isArray(input.records) ? input.records : [];
   const summary = summarize(records);
+  const chain = verifyChain(records);
+  const chainValue = chain.status === "ok" ? "intact" : chain.status;
+  const chainClass = chain.status === "broken" ? " deny" : chain.status === "ok" ? " pass" : "";
+  const chainNote =
+    chain.status === "broken"
+      ? ` Chain broken at record ${chain.brokenAt} (${chain.reason}).`
+      : chain.status === "ok"
+        ? " Hash chain matches. Rewriting the whole file can still recompute it."
+        : chain.status === "legacy"
+          ? " Legacy log with no hash chain. New logs are chained."
+          : "";
   const generatedAt = input.generatedAt ?? new Date().toISOString();
   const rules = input.policy?.rules ?? [];
   const preset = input.policy?.preset ?? "balanced";
@@ -151,8 +163,9 @@ export function renderAuditReport(input) {
   <div class="card pass"><div class="label">passed through</div><div class="value">${summary.byDecision.pass}</div></div>
   <div class="card"><div class="label">sessions</div><div class="value">${summary.sessions}</div></div>
   <div class="card"><div class="label">redactions</div><div class="value">${summary.redactions}</div></div>
+  <div class="card${chainClass}"><div class="label">chain</div><div class="value">${esc(chainValue)}</div></div>
 </div>
-<p class="hint">Window: ${esc(timeOf(summary.firstAt))} → ${esc(timeOf(summary.lastAt))}. ${summary.byEvent.tool} tool and ${summary.byEvent.shell} shell events were also recorded.</p>
+<p class="hint">Window: ${esc(timeOf(summary.firstAt))} → ${esc(timeOf(summary.lastAt))}. ${summary.byEvent.tool} tool and ${summary.byEvent.shell} shell events were also recorded.${esc(chainNote)}</p>
 
 ${summary.topRules.length ? `<h1>Rules that fired</h1>
 <div class="panel"><div class="bars">${topRuleRows}</div></div>` : ""}

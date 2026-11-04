@@ -178,6 +178,8 @@ Globs: `*` (any characters except `/` in path mode), `**` (across directories, `
 
 Evaluation order: **user rules in declaration order, then preset rules; first match wins.** A miss leaves the native decision untouched.
 
+A command rule is also tried against the text inside `bash -c`, `sh -c`, `powershell -Command` and `cmd /c`, including a path prefix such as `/bin/bash`. The raw command is still tested, so a wrapper can only add a match. Pipes stay intact: `curl * | *sh*` matches the whole string. `git -C repo push --force` still misses the force-push globs, because cordon does not reorder git's global options.
+
 ### Presets
 
 | Preset | What it adds |
@@ -194,7 +196,7 @@ Run `cordon check` to see how many user and preset rules are active.
 | --- | --- | --- |
 | `check [--policy f] [--json]` | validate the policy, print effective rules | 0 ok, 2 invalid |
 | `evaluate --action a [--command c] [--path p] [--tool t] [--agent id]` | decide a single call | 0 pass, 10 ask, 20 deny |
-| `audit --log f [--html out] [--open] [--json]` | summarise a log, render HTML | 0 ok, 4 missing log |
+| `audit --log f [--html out] [--open] [--json]` | summarise a log, check its hash chain, render HTML | 0 ok, 4 missing log, 5 broken chain |
 | `init [--preset p] [--out f] [--force]` | write a starter policy | 0 ok, 1 exists/usage |
 | `redact [file]` | redact secrets from a file or stdin | 0 |
 
@@ -206,16 +208,16 @@ Each JSONL line is one event (`decision`, `tool` or `shell`):
 {"v":1,"ts":"2026-11-03T03:57:37.927Z","event":"decision","sessionID":"ses_…","agent":"build","action":"shell","decision":"deny","nativeEffect":"allow","effect":"deny","rule":"deny-rm","reason":"regression: no destructive rm","command":"rm -rf ./scratch","commandHash":"dfc8ec3b…"}
 ```
 
-Fields: `ts`, `event`, `sessionID`, `agent`, `action`, `tool`, `decision` (deny/ask/allow/pass), `nativeEffect`, `effect`, `rule`, `reason`, `paths`, `command` (redacted), `commandHash`, `redactions`, and `status` / `durationMs` for tool events.
+Fields: `ts`, `event`, `sessionID`, `agent`, `action`, `tool`, `decision` (deny/ask/allow/pass), `nativeEffect`, `effect`, `rule`, `reason`, `paths`, `command` (redacted), `commandHash`, `redactions`, `prev`, `hash`, and `status` / `durationMs` for tool events. `prev` and `hash` are present on logs written by 0.1.5 and later.
 
-`cordon audit --html report.html` renders summary cards, the rules that fired, and a filterable timeline. Secrets are redacted before they reach the log, and every command always gets a stable hash, so records can be correlated without the plaintext.
+`cordon audit --html report.html` renders summary cards (including the chain), the rules that fired, and a filterable timeline. Secrets are redacted before they reach the log, and every command always gets a stable hash, so records can be correlated without the plaintext. One process appends the chain. A legacy log with no hashes still audits as success.
 
 ## Verified
 
 | Check | Result |
 | --- | --- |
 | Live regression | **Passed on OpenCode 2.2.5** (2026-11-03): `.env` read tightened `ask → deny`, `rm -rf ./scratch` tightened `allow → deny` under `--auto`, both logged, target file survived — [`docs/REGRESSION.md`](docs/REGRESSION.md) |
-| Unit + adapter tests | **57 passing** (`node --test test/guard.test.mjs test/plugin.test.mjs`), including a suite that drives the real `@opencode/plugin` hooks through a fake context |
+| Unit + adapter tests | **61 passing** (`node --test test/guard.test.mjs test/plugin.test.mjs`), including a suite that drives the real `@opencode/plugin` hooks through a fake context |
 | Packaging | published as [`opencode-cordon`](https://www.npmjs.com/package/opencode-cordon); `npx opencode-cordon --version` works |
 | CI | Node 20/22/24 × Ubuntu/Windows |
 
@@ -224,7 +226,7 @@ Fields: `ts`, `event`, `sessionID`, `agent`, `action`, `tool`, `decision` (deny/
 - **Not a sandbox.** No process, filesystem or network isolation. It sees what goes through OpenCode's permission decisions and tool/shell events; commands you run outside OpenCode are out of scope.
 - **Not a replacement for native permissions.** It only tightens. To loosen something, edit OpenCode's own permission config.
 - **Not a secrets manager / DLP product.** `redact` is best effort by pattern; the reliable move is a rule that keeps secret paths out of the context window.
-- **Not cryptographically tamper-proof.** "Tamper-evident" means each record is bound to a rule and reason, remote commands are hashed, secrets are redacted, and the file is append-only. Anyone with local write access can still edit it — ship the JSONL to an external sink if you need real guarantees.
+- **Not cryptographically tamper-proof.** Each new record stores `prev` and `hash`, so `cordon audit` can see an edited, deleted or reordered line (exit 5). Anyone who can rewrite the file can recompute that chain. Ship the JSONL to an external sink if you need a real guarantee.
 - **Not a V1 compatibility layer.** OpenCode 1.18.x has no equivalent permission hook.
 - **Not an LLM permission reviewer.** Decisions are local, deterministic rules: no tokens, no network calls.
 
@@ -235,7 +237,7 @@ Full threat model and vulnerability reporting: [SECURITY.md](SECURITY.md).
 - [x] Live regression on OpenCode 2.2.5 and a recorded fixture of hook payloads
 - [ ] `session.panel` TUI part: a live "what is being blocked right now" panel
 - [ ] `cordon check --explain`: why a call matched, and what to change
-- [ ] Hash-chained audit entries plus `cordon audit --verify`
+- [x] Hash-chained audit entries, checked by `cordon audit` (exit 5 when the chain breaks)
 - [ ] GitHub Action that fails a PR when dangerous rules are removed
 - [ ] Community policy templates
 

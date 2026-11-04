@@ -85,7 +85,7 @@ Two rules, checked into the repo, reviewed like code, evaluated deterministicall
 
 ## Status and scope
 
-0.1.0 ships the core engine and the CLI. The plugin adapter is implemented against the OpenCode 2.2.5 type signatures, but it has not been regression-tested on a real 2.2.x installation: the development machine runs 1.18.4 (V1). Treat the plugin path as beta until that regression lands, and please file issues with the version and policy file attached. The roadmap is deliberately small: 2.2.x regression, then a TUI panel (`session.panel`) for recent decisions, then audit integrity checks.
+0.1.5 is verified on OpenCode 2.2.5 (see [`REGRESSION.md`](REGRESSION.md)). The plugin only tightens `permission.evaluate`. New logs carry a hash chain that detects an edited, deleted or reordered line; a local rewrite can still be recomputed, so this is not a tamper-proof log. A TUI `session.panel` for recent decisions is still later. Cordon has no visual dashboard and no sandbox.
 
 ## Sources
 

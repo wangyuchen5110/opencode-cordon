@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { auditSettings, loadPolicy, PRESETS, resolveRules, starterPolicy } from "./policy.mjs";
 import { decide } from "./decision.mjs";
-import { readRecords, summarize } from "./audit.mjs";
+import { readRecords, summarize, verifyChain } from "./audit.mjs";
 import { renderAuditReport } from "./report.mjs";
 import { redactText } from "./redact.mjs";
 
@@ -22,7 +22,7 @@ const green = paint("32");
 const yellow = paint("33");
 const cyan = paint("36");
 
-const EXIT = { ok: 0, usage: 1, invalidPolicy: 2, missingLog: 4, deny: 20, ask: 10 };
+const EXIT = { ok: 0, usage: 1, invalidPolicy: 2, missingLog: 4, brokenChain: 5, deny: 20, ask: 10 };
 
 /** Tiny `--key value` / `--flag` parser. */
 export function parseArgs(argv) {
@@ -84,7 +84,7 @@ ${bold("GLOBAL")}
   -v, --version     Print the version
 
 ${bold("EXIT CODES")}
-  0 ok · 1 usage · 2 invalid policy · 4 missing audit log
+  0 ok · 1 usage · 2 invalid policy · 4 missing audit log · 5 broken audit chain
   evaluate only: 10 ask · 20 deny
 
 ${bold("PRESETS")}  ${PRESETS.join(" · ")}`;
@@ -202,6 +202,7 @@ function audit(args) {
 
   const { records, invalid } = readRecords(logPath);
   const summary = summarize(records);
+  const chain = verifyChain(records);
   const loaded = args.policy ? loadPolicy({ policyPath: String(args.policy) }) : loadPolicy({});
 
   let htmlPath = null;
@@ -220,13 +221,22 @@ function audit(args) {
   }
 
   if (args.json) {
-    console.log(JSON.stringify({ logPath, htmlPath, invalid, summary }, null, 2));
-    return EXIT.ok;
+    console.log(JSON.stringify({ logPath, htmlPath, invalid, summary, chain }, null, 2));
+    return chain.status === "broken" ? EXIT.brokenChain : EXIT.ok;
   }
 
   const decisions = summary.byDecision.deny + summary.byDecision.ask + summary.byDecision.allow + summary.byDecision.pass;
+  const chainLine =
+    chain.status === "ok"
+      ? `chain      ${green("ok")} ${dim("(" + summary.total + ")")}`
+      : chain.status === "legacy"
+        ? `chain      ${dim("legacy (no hashes)")}`
+        : chain.status === "empty"
+          ? `chain      ${dim("empty")}`
+          : `chain      ${red("broken")} at record ${chain.brokenAt} (${chain.reason})`;
   console.log(`${bold("cordon audit")} ${dim(logPath)}`);
   console.log(`  records    ${summary.total}${invalid ? yellow(` (${invalid} unreadable)`) : ""}`);
+  console.log(`  ${chainLine}`);
   console.log(`  decisions  ${decisions}  ${red("deny " + summary.byDecision.deny)} · ${yellow("ask " + summary.byDecision.ask)} · ${dim("pass " + summary.byDecision.pass)}`);
   console.log(`  tools      ${summary.byEvent.tool}   shells ${summary.byEvent.shell}`);
   console.log(`  sessions   ${summary.sessions}`);
@@ -242,7 +252,7 @@ function audit(args) {
     }
   }
   if (htmlPath) console.log(`  ${green("html")}       ${htmlPath}${args.open ? dim(" (opened)") : ""}`);
-  return EXIT.ok;
+  return chain.status === "broken" ? EXIT.brokenChain : EXIT.ok;
 }
 
 /** @param {any} args */

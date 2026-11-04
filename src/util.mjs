@@ -117,6 +117,53 @@ export function normalizeCommand(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
+function unwrapShell(text) {
+  const shell = /^(?:bash|sh|dash|zsh)\s+((?:-[A-Za-z]+\s+)+)(.+)$/i.exec(text);
+  if (shell && /(?:^|\s)-[A-Za-z]*c[A-Za-z]*(?:\s|$)/i.test(shell[1])) return shell[2];
+  const powershell = /^(?:pwsh|powershell)(?:\.exe)?\s+(?:-\S+\s+)*-Command\s+(.+)$/i.exec(text);
+  if (powershell) return powershell[1];
+  const cmd = /^cmd(?:\.exe)?\s+\/c\s+(.+)$/i.exec(text);
+  if (cmd) return cmd[1];
+  return "";
+}
+
+function unquote(value) {
+  const text = value.trim();
+  if (text.length < 2) return text;
+  const quote = text[0];
+  if ((quote === '"' || quote === "'") && text.endsWith(quote)) return text.slice(1, -1);
+  return text;
+}
+
+/**
+ * Strings to test against a command glob.
+ * The raw command is always included. A `bash -c` / `sh -c` / `powershell -Command` /
+ * `cmd /c` wrapper also contributes its inner text, so `bash -c "rm -rf /tmp"` can hit `rm -rf *`.
+ * This only adds match chances. It cannot make a rule miss.
+ * @param {string} command
+ * @returns {string[]}
+ */
+export function commandCandidates(command) {
+  const text = normalizeCommand(command);
+  const seeds = [text];
+  const rooted = text.replace(/^(?:[A-Za-z]:[\\/]|\/)?(?:[\w.-]+[\\/])+(?=bash\b|sh\b|dash\b|zsh\b|pwsh\b|powershell\b|cmd\b)/i, "");
+  if (rooted !== text) seeds.push(normalizeCommand(rooted));
+
+  /** @type {string[]} */ const out = [];
+  const add = (value) => {
+    const next = normalizeCommand(value);
+    if (next && !out.includes(next)) out.push(next);
+  };
+  for (const seed of seeds) add(seed);
+  // Newly unwrapped text is visited too, so `bash -c "bash -c 'rm -rf /tmp'"` still hits `rm -rf *`.
+  // Capped so a weird command cannot grow the candidate list without bound.
+  for (let i = 0; i < out.length && i < 4; i++) {
+    const inner = unwrapShell(out[i]);
+    if (inner) add(unquote(inner));
+  }
+  return out;
+}
+
 /** Heuristic: does this string look like a file path instead of a command? */
 export function looksLikePath(value) {
   const s = normalizePath(value).trim();

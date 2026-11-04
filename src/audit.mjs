@@ -1,7 +1,9 @@
 // Append-only JSONL audit log.
 //
-// One line per event, UTF-8, no external storage. Every command is hashed so
-// records can be correlated without keeping the plaintext.
+// One line per event, UTF-8, no external storage. New logs link each record to
+// the previous hash so an edited, deleted or reordered line is detectable.
+// A local rewrite can recompute the chain; this is not a tamper-proof log.
+// Every command is also hashed so records can be correlated without the plaintext.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -10,6 +12,79 @@ import { clip, sha256 } from "./util.mjs";
 import { describeSubject } from "./decision.mjs";
 
 export const AUDIT_VERSION = 1;
+
+/** SHA-256 of the empty string. The first record in a new log uses this as `prev`. */
+export const GENESIS = sha256("");
+
+/**
+ * Stable JSON for hashing. Keys are sorted and `undefined` values are omitted,
+ * so a parse/stringify that reorders keys does not break the chain.
+ * @param {unknown} value
+ * @returns {string | undefined}
+ */
+export function canonicalJson(value) {
+  if (value === undefined) return undefined;
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return "[" + value.map((item) => (item === undefined ? "null" : canonicalJson(item))).join(",") + "]";
+  }
+  const keys = Object.keys(value)
+    .filter((key) => value[key] !== undefined)
+    .sort();
+  return "{" + keys.map((key) => JSON.stringify(key) + ":" + canonicalJson(value[key])).join(",") + "}";
+}
+
+/**
+ * Attach `prev` and `hash` without mutating the input.
+ * `hash` is sha256(canonicalJson(record without hash)).
+ * @param {Record<string, unknown>} record
+ * @param {string} prev
+ */
+export function sealRecord(record, prev) {
+  const body = { ...record, prev };
+  delete body.hash;
+  return { ...body, hash: sha256(canonicalJson(body)) };
+}
+
+/**
+ * Check a hash chain.
+ * Empty → intact. No `hash` fields at all → legacy (intact). Any mix of hashed
+ * and unhashed lines, a bad `prev`, or a recomputed hash that differs → broken.
+ * @param {any[]} records
+ * @returns {{ status: "empty" | "legacy" | "ok" | "broken", intact: boolean, brokenAt?: number, reason?: "missing" | "prev" | "hash" }}
+ */
+export function verifyChain(records) {
+  if (!records.length) return { status: "empty", intact: true };
+  const anyHash = records.some((record) => typeof record?.hash === "string" && record.hash);
+  if (!anyHash) return { status: "legacy", intact: true };
+
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+    if (typeof record?.hash !== "string" || !record.hash || typeof record.prev !== "string" || !record.prev) {
+      return { status: "broken", intact: false, brokenAt: i, reason: "missing" };
+    }
+    const expectedPrev = i === 0 ? GENESIS : records[i - 1].hash;
+    if (record.prev !== expectedPrev) return { status: "broken", intact: false, brokenAt: i, reason: "prev" };
+    const body = { ...record };
+    delete body.hash;
+    if (sha256(canonicalJson(body)) !== record.hash) return { status: "broken", intact: false, brokenAt: i, reason: "hash" };
+  }
+  return { status: "ok", intact: true };
+}
+
+/**
+ * A new or already-chained log keeps the chain. A log whose last line has no
+ * hash stays legacy, so upgrading cordon does not mark old files as broken.
+ * @param {string} logPath
+ */
+function loadChainState(logPath) {
+  if (!existsSync(logPath)) return { mode: "chain", prev: GENESIS };
+  const { records } = readRecords(logPath);
+  if (records.length === 0) return { mode: "chain", prev: GENESIS };
+  const last = records[records.length - 1];
+  if (typeof last?.hash === "string" && last.hash) return { mode: "chain", prev: last.hash };
+  return { mode: "legacy", prev: "" };
+}
 
 /**
  * Append one record to a JSONL file, creating parent directories as needed.
@@ -112,6 +187,7 @@ export function createAuditWriter(options) {
   const redactEnabled = options.redact !== false;
   const storeCommand = options.storeCommand !== false;
   const hashCommands = options.commandHash === true;
+  const state = loadChainState(logPath);
   /** @type {Map<string, number>} */ const pending = new Map();
 
   function sanitize(value) {
@@ -123,7 +199,10 @@ export function createAuditWriter(options) {
 
   function write(record) {
     try {
-      appendRecord(logPath, { v: AUDIT_VERSION, ts: new Date().toISOString(), ...record });
+      const stamped = { v: AUDIT_VERSION, ts: new Date().toISOString(), ...record };
+      const line = state.mode === "chain" ? sealRecord(stamped, state.prev) : stamped;
+      appendRecord(logPath, line);
+      if (state.mode === "chain") state.prev = line.hash;
     } catch (error) {
       // Never let the audit log break a session.
       console.error(`[cordon] audit write failed: ${error instanceof Error ? error.message : String(error)}`);
